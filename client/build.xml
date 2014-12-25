@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<project name="MinetClient" default="build-jar" basedir=".">
+
+   <property name="src.dir" value="src"/>
+   <property name="build.dir" value="build"/>  
+   <property name="dist.dir" value="dist"/> 
+
+   <target name="init">
+      <tstamp>
+         <format property="version.date" pattern="yyyy-MM-dd" locale="en"/>
+      </tstamp>
+      <mkdir dir="${build.dir}"/>
+      <mkdir dir="${dist.dir}"/>
+   </target>
+
+
+   <target name="compile" depends="init">
+      <javac srcdir="${src.dir}" destdir="${build.dir}" debug="true" target="1.5">
+         <compilerarg value="-Xlint:unchecked"/>
+      </javac>
+   </target>
+
+   <target name="build-jar" depends="compile">
+      <jar destfile="${dist.dir}/MinetClient.jar" basedir="${build.dir}">
+         <manifest>
+            <attribute name="Build-By" value="SunDongliang"/>
+            <attribute name="Main-Class" value="com.sdl.MinetClient.Main"/>
+         </manifest>
+      </jar>
+   </target>
+
+   <target name="run" depends="build-jar">
+      <java dir="${dist.dir}"
+            jar="${dist.dir}/MinetClient.jar"
+            fork="true">
+            <arg value="-h"/>
+      </java>
+   </target>
+
+   <target name="clean">
+      <delete dir="${build.dir}"/>
+      <delete dir="${dist.dir}"/>
+   </target>
+</project>
