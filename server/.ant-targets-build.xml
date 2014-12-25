@@ -1,0 +1,5 @@
+build-jar
+clean
+compile
+init
+run
