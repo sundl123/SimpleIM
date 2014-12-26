@@ -64,6 +64,21 @@ public class ServerProcessor {
         return dat;
     }
 
+    public static String sendMail(ServerHost h, String receiver, String title, String text) {
+        String dat = getCurDate();
+        String msg = "CS1.0" + sp + "EMAIL" + sp + h.selfName + lineEnd;
+        msg += "Date" + sp + dat + lineEnd;
+        msg += "Content-Length" + sp + text.length() + lineEnd;
+        msg += "Receiver" + sp + receiver + lineEnd;
+        msg += "Title" + sp + title + lineEnd;
+        msg += lineEnd;
+
+        msg += text + lineEnd + lineEnd;
+        h.ps.print(msg);
+        h.ps.flush();
+        return dat;
+    }
+
     public static void leave(ServerHost h) {
         // send leave msg to server
         String msg = "CS1.0" + sp + "LEAVE" + sp + h.selfName + lineEnd;
@@ -130,8 +145,9 @@ public class ServerProcessor {
         System.out.println("Data read complete");
 
         // 获取数据主体
-        if (results.get(0).equals("CSMESSAGE")) {
+        if ((results.get(0).equals("CSMESSAGE")) || (results.get(0).equals("EMAIL"))) {
             // msg format: ["MESSAGE", userName, date, length, data...]
+            // mail format:["EMAIL", sender, date, length, title, data]
             String data = "";
             for (int i = 0; i < strs.size(); i++) {
                 data += strs.get(i) + "\r\n";

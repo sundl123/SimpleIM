@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.ArrayList;
 import java.io.BufferedReader;
 import java.io.PrintStream;
@@ -56,7 +57,11 @@ public class ClientProcessor {
 
         String data = "";
         for (int i =0; i < hosts.size(); i++) {
-            data += hosts.get(i).name + sp + hosts.get(i).ip + sp + hosts.get(i).listeningPort + lineEnd;
+            String sta = "1";
+            if (hosts.get(i).socket == null) {
+                sta = "0";
+            }
+            data += hosts.get(i).name + sp + hosts.get(i).ip + sp + hosts.get(i).listeningPort + sp + sta + lineEnd;
         }
 
         msg += "Content-Length:" + sp + data.length() + lineEnd;
@@ -81,7 +86,7 @@ public class ClientProcessor {
         msg += lineEnd;
 
         for (int i = 0; i < hosts.size(); i++) {
-            if (hosts.get(i).name != h.name) {
+            if ((hosts.get(i).name != h.name)&&(hosts.get(i).socket != null)) {
                 hosts.get(i).ps.print(msg);
                 hosts.get(i).ps.flush();
             }
@@ -102,10 +107,10 @@ public class ClientProcessor {
         msg += "Content-Length:" + sp + text.length() + lineEnd;       
         msg += lineEnd;
         msg += text;
-        msg += lineEnd;
+        msg += lineEnd+lineEnd;
 
         for (int i = 0; i < hosts.size(); i++) {
-            if (hosts.get(i).name != userName) {
+            if ((hosts.get(i).name != userName) && (hosts.get(i).socket != null)) {
                 hosts.get(i).ps.print(msg);
                 hosts.get(i).ps.flush();
             }
@@ -113,7 +118,35 @@ public class ClientProcessor {
         System.out.println(msg);
     }
 
-    public static String[] recvAndProcsMsg(Host h) {
+    /**
+     * clear host h's mailbox and send 
+     */
+    public static void clearMailBox(Host h) {
+        // mail format from server to client : ["EMAIL", sender, date, length, title, data..]
+        System.out.println("I am here!");
+        System.out.println("h.mailBox.size(): " + h.mailBox.size());
+        if (h.socket == null)
+            return;
+        Mail m;
+        try {
+            while(true) {
+                m = h.mailBox.removeFirst();
+                String msg = "CS1.0" + sp + "EMAIL"+ sp + m.sender + lineEnd;
+                msg += "Date" + sp + m.date + lineEnd;
+                msg += "Content-Length" + sp + m.text.length() + lineEnd;
+                msg += "Title" + sp + m.title + lineEnd + lineEnd;
+
+                msg += m.text + lineEnd + lineEnd;
+
+                h.ps.print(msg);
+                h.ps.flush();
+                System.out.println(msg);
+            }
+        } catch (NoSuchElementException ex) {}
+
+    }
+
+    public static String[] recvAndProcsMsg(Host h) throws java.io.IOException{
         List<String> results = new ArrayList<String>(); // store all results
 
         List<String> strs = new ArrayList<String>();
@@ -122,12 +155,9 @@ public class ClientProcessor {
         //  read header information
         // If it is a hello msg, just return the array and ignore the rest
         // hello msg format: ["MINET"/"MIRO", hostname]
-        try {
-            buff = h.reader.readLine();
-            System.out.println(buff);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
+        buff = h.reader.readLine();
+        System.out.println(buff);
+
         String[] temp = buff.split(sp);
         if ((temp[0].equals("MINET"))|| (temp[0].equals("MIRO")))
             return temp;
@@ -137,14 +167,11 @@ public class ClientProcessor {
         results.addAll(Arrays.asList(parts));
 
         // read property info and analyze it
-        try {
-            while(!(buff = h.reader.readLine()).equals("")) {
-                strs.add(buff);
-                System.out.println(buff);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        while(!(buff = h.reader.readLine()).equals("")) {
+            strs.add(buff);
+            System.out.println(buff);
         }
+
 
         // 获取首部行
         for (int i = 0; i < strs.size(); i++) {
@@ -153,17 +180,13 @@ public class ClientProcessor {
 
         // read data info
         strs.clear();
-        try {
-            while(!(buff = h.reader.readLine()).equals("")) {
-                strs.add(buff);
-                System.out.println(buff);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        while(!(buff = h.reader.readLine()).equals("")) {
+            strs.add(buff);
+            System.out.println(buff);
         }
 
         // 获取数据主体
-        if (results.get(0).equals("MESSAGE")) {
+        if ((results.get(0).equals("MESSAGE")) || (results.get(0).equals("EMAIL"))) {
                 // msg format: ["MESSAGE", userName, date, length, data...]
                 String data = "";
                 for (int i = 0; i < strs.size(); i++) {

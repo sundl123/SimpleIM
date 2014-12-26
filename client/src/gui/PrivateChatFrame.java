@@ -21,6 +21,7 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
     // GUI component
     public TextField tfEdit = new TextField(100);
     public Button btSend = new Button("send");
+    public Button btSendFile = new Button("File");
     public TextArea taChat = new TextArea(30, 50);
     public JMenuItem quitMenuItem;
 
@@ -101,6 +102,8 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
         panelL.add(lEdit);
         panelL.add(tfEdit);
         panelL.add(btSend);
+        panelL.add(btSendFile);
+        btSendFile.addActionListener(new OpenHandler());
         btSend.addActionListener(this);
 
         this.add(panelM, BorderLayout.CENTER);
@@ -131,11 +134,23 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
             } else if (e.getSource() == btSend) {
                 // 发消息给服务器
                 String dat = PeerProcessor.sendMsg(this.ph, tfEdit.getText());
-                taChat.append(ph.selfName + "(" +  dat + "): "+ tfEdit.getText() + "(p2p)\n");
+                taChat.append("Yourself(" +  dat + "): "+ tfEdit.getText() + "\n");
                 tfEdit.setText("");
             }
         } catch (Exception ex) {
             ex.printStackTrace();
+        }
+    }
+
+    class OpenHandler implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+            JFileChooser jc = new JFileChooser();
+            int rVal = jc.showOpenDialog(PrivateChatFrame.this);  //显示打开文件的对话框
+            if(rVal == JFileChooser.APPROVE_OPTION) {
+                String dir=jc.getCurrentDirectory().toString();
+                String file=jc.getSelectedFile().getName();
+                PeerProcessor.sendFile(PrivateChatFrame.this.ph, dir+ "/" + file);
+            }
         }
     }
 }

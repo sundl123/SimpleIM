@@ -1,6 +1,7 @@
 package com.sdl.MiroServer;
 
 import java.util.List;
+import java.util.LinkedList;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -8,11 +9,12 @@ import java.io.PrintStream;
 import java.net.Socket;
 
 public class Host extends Thread {
-    Socket socket;
+    Socket socket = null;
     String name;
     String ip;
     int listeningPort;
     MiroServer ms;
+    LinkedList<Mail> mailBox = new LinkedList<Mail>();
 
     BufferedReader reader;
     PrintStream ps;
@@ -20,6 +22,7 @@ public class Host extends Thread {
     boolean isRun = true;
     boolean isHello = false;
     boolean isLogin = false;
+
     public Host(Socket s, MiroServer ms_) {
         ms = ms_;
         socket = s;
@@ -33,10 +36,18 @@ public class Host extends Thread {
         }
     }
 
+    public Host() {}
+
     public void run() {
         String[] contents;
         while(isRun) {
-            contents = ClientProcessor.recvAndProcsMsg(this);
+            try {
+                contents = ClientProcessor.recvAndProcsMsg(this);
+            } catch (java.io.IOException ex) {
+                // do nothing
+                System.out.println("Client Time out");
+                continue;
+            }
             System.out.println("Processing new string arrays\n");
             for (int i =0;  i < contents.length; i++){
                 System.out.println(contents[i]);
@@ -50,11 +61,42 @@ public class Host extends Thread {
                     ClientProcessor.hello(this, "MiroServer");
                 }
             } else if (contents[0].equals("LOGIN")) {
-                if (isHello) {
+                if ((isHello)&&(!isLogin)) {
                     // 检查用户名是否重复
                     boolean isSame = false;
                     for (int i = 0; i < ms.hosts.size(); i++) {
                         if (ms.hosts.get(i).name.equals(contents[1])) {
+                            if (ms.hosts.get(i).socket == null) {
+                                // 唤醒offline的监听器
+                                Host nh = new Host();
+
+                                nh.socket = this.socket;
+                                nh.ps =  this.ps;
+                                nh.reader =  this.reader;
+                                this.socket = null;
+                                this.reader = null;
+                                this.ps = null;
+
+                                nh.name = ms.hosts.get(i).name;
+                                nh.ip = nh.socket.getInetAddress().getHostAddress();
+                                nh.listeningPort = Integer.parseInt(contents[2]);
+                                nh.mailBox = ms.hosts.get(i).mailBox;
+                                nh.ms = ms.hosts.get(i).ms;
+                                nh.isHello = true;
+                                nh.isLogin = true;
+                                nh.isRun = true;
+
+                                ms.hosts.add(nh);
+                                ms.hosts.remove(i);
+
+                                // 通知该客户端登录成功
+                                ClientProcessor.sendStatus(nh, 1);
+                                // 通知其他客户端新用户上线。
+                                ClientProcessor.sendUpdate(nh, ms.hosts, 1);
+
+                                nh.start();
+                                return;
+                            }
                             isSame = true;
                             break;
                         }
@@ -68,6 +110,7 @@ public class Host extends Thread {
 
                         // 通知该客户端登录成功
                         ClientProcessor.sendStatus(this, 1);
+
                         // 通知其他客户端新用户上线。
                         ClientProcessor.sendUpdate(this, ms.hosts, 1);
 
@@ -76,20 +119,32 @@ public class Host extends Thread {
                         isLogin = true;
                     }
                 }
+                // 通知该客户端登录成功
+                ClientProcessor.sendStatus(this, 1);
             } else if (contents[0].equals("GETLIST")) {
                 if (isLogin) {
                     // 发送在线用户列表
                     ClientProcessor.sendList(this, ms.hosts);
+                    ClientProcessor.clearMailBox(this);
                 }
             } else if (contents[0].equals("LEAVE")) {
                 if(isLogin) {
-                    // 从用户列表中删除它
-                    ms.hosts.remove(this);
-
+                    try {
+                        this.ps.close();
+                        this.reader.close();
+                        this.socket.close();
+                        this.ps = null;
+                        this.reader = null;
+                        this.socket = null;
+                    } catch (Exception e) {
+                        //DO NOTHING
+                    }
                     // 想其他所有用户发送update信息
                     ClientProcessor.sendUpdate(this, ms.hosts, 0);
                     // 结束这个监听线程
-                    isRun = false;
+                    this.isHello = false;
+                    this.isLogin = false;
+                    this.isRun = false;
                 }
             } else if (contents[0].equals("MESSAGE")) {
                 if(isLogin) {
@@ -98,6 +153,16 @@ public class Host extends Thread {
                 }
             } else if (contents[0].equals("BEAT")) {
                 // TO DO
+            } else if (contents[0].equals("EMAIL")) {
+                // put it in receiver's mail box and try to clear it
+               // mail format from server to client : ["EMAIL", sender, date, length, receriver, title, data..]
+                for (int i = 0; i < ms.hosts.size(); i++) {
+                    if (ms.hosts.get(i).name.equals(contents[4])) {
+                        ms.hosts.get(i).mailBox.add(new Mail(contents[1], contents[2], contents[5], contents[contents.length-1]));
+                        ClientProcessor.clearMailBox(ms.hosts.get(i));
+                        break;
+                    }
+                }                
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.sdl.MinetClient.network;
 
+import java.io.*;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
-
+import java.net.ServerSocket;
 
 /**
  * A <code>PeerSocket</code> is a class that manage connections with Minet peers.
@@ -56,6 +57,156 @@ public class PeerProcessor {
         System.out.println(msg);
 
         return dat;
+    }
+
+    public static void sendFile(PeerHost h, String filePath) {
+        // test
+        System.out.println("I am trying to send a file: " + filePath + " to : " + h.hostName);
+        // test
+
+        DataOutputStream os = null;
+        DataInputStream is = null;
+        ServerSocket server = null;
+        Socket socket = null;
+
+        try {
+            File file = new File(filePath);
+            int progress = 0;
+            
+            // test
+            System.out.println("1");
+            // test
+
+            // 传输文件头，文件名 ,IP
+            String msg = "P2PFILE" + sp + h.selfName + sp + h.socket.getLocalAddress().getHostAddress() + sp + file.getName()+ lineEnd;
+
+            h.ps.print(msg);
+            h.ps.flush();
+
+             server = new ServerSocket(3457);
+             socket = server.accept();
+
+            // test
+            System.out.println("1");
+            // test
+
+             os = new DataOutputStream(socket.getOutputStream());
+             is = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)));  
+
+            // 将文件长度传给服务器端。
+            os.writeLong((long) file.length());  
+            os.flush();
+  
+            // 缓冲区大小  
+            int bufferSize = 8192;  
+            // 缓冲区  
+            byte[] buf = new byte[bufferSize]; 
+
+            // 传输文件  
+            while (true) {  
+                int read = 0;  
+                if (is != null) {  
+                    read = is.read(buf);  
+                }  
+                progress += Math.abs(read);
+                if (read == -1) {  
+                    break;  
+                }  
+                os.write(buf, 0, read); 
+            }
+            os.flush();
+
+            // test
+            System.out.println("2");
+            // test
+
+        }catch (IOException e) {  
+            e.printStackTrace();  
+        } finally {  
+            // 关闭所有连接  
+            try {  
+                if (os != null)  
+                    os.close();  
+            } catch (IOException e) {  
+                }  
+            try {  
+                if (is != null)  
+                    is.close();  
+            } catch (IOException e) {  
+                }  
+            try {  
+                if (socket != null)  {
+                    server.close();
+                    socket.close();  
+                }
+            } catch (IOException e) {  
+                }  
+            } 
+    }
+
+    public static void receiveFile(String ip, String savePath) { 
+        int progress = 0;
+        Socket socket;
+
+        // test
+        System.out.println("I am trying to receiveFile: " + savePath + " from: " + ip);
+        // test
+
+        try {
+            // 建立socket连接
+            socket = new Socket(ip, 3457);
+
+
+            // test
+            System.out.println("connections success!");
+            // test
+
+            // 建立socket输入流  
+            DataInputStream inputStream = new DataInputStream(new BufferedInputStream(socket.getInputStream()));  
+            // 缓冲区大小  
+            int bufferSize = 8192;  
+            // 缓冲区  
+            byte[] buf = new byte[bufferSize];  
+            int passedlen = 0;  
+            long len = 0;  
+            // 获取文件名称
+            DataOutputStream fileOut = new DataOutputStream(  
+                    new BufferedOutputStream(new BufferedOutputStream(  
+                            new FileOutputStream(savePath))));  
+            // 获取文件长度  
+            len = inputStream.readLong();  
+
+            System.out.println("文件的长度为:" + len + "  KB");  
+            System.out.println("开始接收文件!");  
+
+            // 获取文件，下边是进度条。
+            System.out.print("#>>>>>>>>#>>>>>>>>>#>>>>>>>>>#>>>>>>>>>#>>>>>>>>>#");
+            System.out.println(">>>>>>>>>#>>>>>>>>>#>>>>>>>>>#>>>>>>>>>#>>>>>>>>>#");  
+            while (true) {
+                int read = 0;  
+                if (inputStream != null) {  
+                    read = inputStream.read(buf);  
+                }  
+                passedlen += read;
+                if (read == -1) {  
+                    break;  
+                }
+                if((int)(passedlen * 100.0 / len)-progress > 0){
+                            progress = (int)(passedlen * 100.0 / len);
+                              System.out.println("文件接收了" + progress + "%"); 
+                            System.out.print(">");
+                            }
+
+                fileOut.write(buf, 0, read);  
+            }
+            System.out.println();
+            System.out.println("接收完成，文件存为: " + savePath);  
+            fileOut.close();
+            socket.close();
+        } catch (Exception e) {
+            System.err.println("File Server Excetption: " + e);
+            e.printStackTrace();
+        }
     }
 
     public static void leave(PeerHost h) {
@@ -116,6 +267,12 @@ public class PeerProcessor {
         String[] temp = buff.split(sp);
         if ((temp[0].equals("MINET"))|| (temp[0].equals("MIRO")))
             return temp;
+
+        if (temp[0].equals("P2PFILE")) {
+            // p2pfile format: ["P2PFILE", userName, IP, FileName]
+            receiveFile(temp[2], temp[3]);
+            return temp;
+        }
 
         // If it is not a hello msg, then remove the first element:protocol header
         String[] parts = Arrays.copyOfRange(temp, 1, temp.length);

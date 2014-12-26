@@ -26,7 +26,8 @@ public class PeerHost extends Thread{
 
     public boolean isRun = true;
     public boolean isHello = false;
-    
+    public boolean status = false;
+
     public PeerHost(PrivateChatFrame mf_, String selfName_, String hostName_, String ip_, int port_){
         mf = mf_;
         selfName = selfName_;
@@ -34,6 +35,7 @@ public class PeerHost extends Thread{
         ip = ip_;
         listeningPort = port_;
     }
+    public PeerHost() {}
 
     public void setFrame(PrivateChatFrame mf_) {
         this.mf = mf_;
@@ -99,9 +101,6 @@ public class PeerHost extends Thread{
                 this.reader.close();
                 this.ps.close();
                 this.socket.close();
-                this.reader = null;
-                this.ps = null;
-                this.socket = null;
         } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -127,16 +126,14 @@ public class PeerHost extends Thread{
             }
             if (contents[0].equals("P2PMESSAGE")) {
                 // p2p msg format:["P2PMESSAGE", name, date, length, ..., data]
-                String newMsg = hostName + "(" + contents[2] + "): " + contents[contents.length -1] + "(p2p)\n";
+                String newMsg = hostName + "(" + contents[2] + "): " + contents[contents.length -1] ;
                 mf.taChat.append(newMsg);
             } else if (contents[0].equals("LEAVE")) {
                 try{
                     this.reader.close();
                     this.ps.close();
                     this.socket.close();
-                    this.reader = null;
-                    this.ps = null;
-                    this.socket = null;
+                    this.isRun = false;
                 } catch (Exception ex) {
                     // Do nothing
                 }

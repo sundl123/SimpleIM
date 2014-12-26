@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import com.sdl.MinetClient.gui.GroupChatFrame;
+import com.sdl.MinetClient.gui.MailFrame;
 
 public class ServerHost extends Thread{
     public Socket socket;
@@ -88,19 +89,23 @@ public class ServerHost extends Thread{
                 continue;
             }
             if (contents[0].equals("LIST")) {
-                // list format:["LIST", date, length, u1, i1, p1, u2, i2, p2]
+                // list format:["LIST", date, length, u1, i1, p1, status, u2, i2, p2, status2]
 
                 PeerHost ph;
-                for (int i = 3; i < contents.length; i += 3) {
+                for (int i = 3; i < contents.length; i += 4) {
                     // contents[i]: user name, contents[i+1]: ip addr, contents[i+2]: listenning port
                     if (contents[i].equals(selfName)) {
-                        mf.list1.add(contents[i]);
+                        mf.list1.add("Yourself-Online");
                         continue;
+                    }
+                    if (contents[i+3].equals("0")) {
+                        mf.list1.add(contents[i]+"-Offline");
+                    } else {
+                        mf.list1.add(contents[i]+"-Online");
                     }
 
                     ph = new PeerHost(null, selfName, contents[i], contents[i+1], Integer.parseInt(contents[i+2]));
                     mf.peers.add(ph);
-                    mf.list1.add(contents[i]);
                 }
                 break;
             }
@@ -123,9 +128,25 @@ public class ServerHost extends Thread{
                 // update format ["UPDATE", status, username, date, length, ip, port]
                 if (contents[1].equals("1")) {
                     // user online
+                    // 先查找该用户是否有记录
+                    int idx;
+                    for (idx = 0; idx < mf.peers.size(); idx++) {
+                        if (mf.peers.get(idx).hostName.equals(contents[2]))
+                            break;
+                    }
+                    if (idx != mf.peers.size()) {
+                        mf.peers.get(idx).status = true;
+                        mf.peers.get(idx).selfName = selfName;
+                        mf.peers.get(idx).ip = contents[contents.length-2];
+                        mf.peers.get(idx).listeningPort = Integer.parseInt(contents[contents.length-1]);
+                        mf.list1.remove(mf.peers.get(idx).hostName+ "-Offline");
+                        mf.list1.add(mf.peers.get(idx).hostName+ "-Online");
+                        continue;
+                    }
+                    // 如果没有记录则新建一条记录
                     PeerHost ph = new PeerHost(null, selfName, contents[2], contents[contents.length-2], Integer.parseInt(contents[contents.length-1]));
                     mf.peers.add(ph);
-                    mf.list1.add(contents[2]);
+                    mf.list1.add(contents[2] + "-Online");
                 } else if (contents[1].equals("0")) {
                     // user offline
                     int idx;
@@ -133,16 +154,20 @@ public class ServerHost extends Thread{
                         if (mf.peers.get(idx).hostName.equals(contents[2]))
                             break;
                     }
-                    // if not connected in p2p, then remove it from peers list and list1
-                    if (mf.peers.get(idx).socket == null) {
-                        mf.list1.remove(mf.peers.get(idx).hostName);
-                        mf.peers.remove(idx);
+                    if (idx != mf.peers.size()) {
+                        //修改状态和标签
+                        mf.peers.get(idx).status = false;
+                        mf.list1.remove(mf.peers.get(idx).hostName + "-Online");
+                        mf.list1.add(mf.peers.get(idx).hostName + "-Offline");
+                        continue;
                     }
                 }
             } else if (contents[0].equals("CSMESSAGE")) {
                 // csmessage format: ["CSMESSAGE", user name, date, length, data]
                 String data = contents[1] + "(" + contents[2] + "): " + contents[contents.length -1];
                 mf.taChat.append(data);
+            } else if (contents[0].equals("EMAIL")) {
+                new MailFrame(this.mf, MailFrame.READ_MODE, contents);
             }
         }
     }

@@ -23,6 +23,12 @@ public class MiroServer {
             // 不停地监听新的连接
             while (true) {
                 socket = server.accept();
+                // set time out for socket
+                try {
+                    socket.setSoTimeout(1000);
+                } catch (Exception e) {
+                    // Do nothing
+                }
                 System.out.println(socket.getInetAddress() + "connections");
                 newHost = new Host(socket, this);
                 newHost.start();

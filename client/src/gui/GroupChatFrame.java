@@ -26,6 +26,7 @@ public class GroupChatFrame extends JFrame implements ActionListener{
     public TextArea taChat = new TextArea(30, 50);
     public java.awt.List list1 = new java.awt.List(25);
     public JMenuItem quitMenuItem;
+    public JMenuItem mailMenuItem;
 
     public GroupChatFrame(Socket s, int listeningPort_, String name_) {
 
@@ -52,8 +53,11 @@ public class GroupChatFrame extends JFrame implements ActionListener{
 
         // set up menu item
         JMenu cMenu = new JMenu("Connection");
+        mailMenuItem= new JMenuItem("Send Mail");
         quitMenuItem= new JMenuItem("Quit");
+        mailMenuItem.addActionListener(this);
         quitMenuItem.addActionListener(this);
+        cMenu.add(mailMenuItem);
         cMenu.add(quitMenuItem);
         JMenuBar mb = new JMenuBar();
         mb.add(cMenu);
@@ -89,20 +93,22 @@ public class GroupChatFrame extends JFrame implements ActionListener{
             } else if (e.getSource() == btSend) {
                 // 发消息给服务器
                 String dat = ServerProcessor.sendMsg(this.sh, tfEdit.getText());
-                taChat.append(this.sh.selfName + "(" +  dat + "): "+ tfEdit.getText());
+                taChat.append( "Yourself(" +  dat + "): "+ tfEdit.getText() + "\n");
                 tfEdit.setText("");
             } else if (e.getSource() == list1) {
                 System.out.println("Clicked, start to connect peer!");
                 // 连接上一个peer host
-                if (this.list1.getSelectedItem() == this.name)
+                if (this.list1.getSelectedItem() == this.name+"-Online")
                     return;
                 for (int i =0; i < this.peers.size(); i++) {
                     System.out.println(this.peers.get(i).hostName);
-                    if (this.peers.get(i).hostName.equals(this.list1.getSelectedItem())) {
+                    if ((this.peers.get(i).hostName+"-Online").equals(this.list1.getSelectedItem())) {
                         peers.get(i).connectPeer();
                         peers.get(i).start();
                     }
                 }
+            } else if (e.getSource() == mailMenuItem) {
+                new MailFrame(this, MailFrame.EDIT_MODE, null);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -138,9 +144,24 @@ public class GroupChatFrame extends JFrame implements ActionListener{
                     if (contents[0].equals("MINET")) {
                         for (int i = 0; i < peers.size(); i++) {
                             if (peers.get(i).hostName.equals(contents[1])) {
-                                peers.get(i).setSocket(newSocket);
-                                PeerProcessor.hello(peers.get(i));
-                                peers.get(i).start();
+                                PeerHost newPh = new PeerHost();
+                                newPh.setSocket(newSocket);
+
+                                newPh.hostName = peers.get(i).hostName;
+                                newPh.selfName = peers.get(i).selfName;
+                                newPh.ip = peers.get(i).ip;
+                                newPh.chatText = peers.get(i).chatText;
+                                newPh.listeningPort = peers.get(i).listeningPort;
+
+                                newPh.isRun = true;
+                                newPh.isHello = true;
+                                newPh.status = peers.get(i).status;
+
+                                PeerProcessor.hello(newPh);
+
+                                peers.remove(i);
+                                peers.add(newPh);
+                                newPh.start();
                                 break;
                             }
                         }
