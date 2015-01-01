@@ -86,8 +86,8 @@ public class Host extends Thread {
                                 nh.isLogin = true;
                                 nh.isRun = true;
 
-                                ms.hosts.add(nh);
                                 ms.hosts.remove(i);
+                                ms.hosts.add(nh);
 
                                 // 通知该客户端登录成功
                                 ClientProcessor.sendStatus(nh, 1);

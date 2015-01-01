@@ -11,6 +11,7 @@ import java.io.PrintStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.ServerSocket;
+import java.util.Random;
 
 /**
  * A <code>PeerSocket</code> is a class that manage connections with Minet peers.
@@ -72,23 +73,31 @@ public class PeerProcessor {
         try {
             File file = new File(filePath);
             int progress = 0;
-            
-            // test
-            System.out.println("1");
-            // test
 
-            // 传输文件头，文件名 ,IP
-            String msg = "P2PFILE" + sp + h.selfName + sp + h.socket.getLocalAddress().getHostAddress() + sp + file.getName()+ lineEnd;
+            int listeningPort = -1;
+            while(true) {
+                // 产生随机端口号（3000～4000之间）
+                Random r = new Random();
+                listeningPort = r.nextInt(4000) % (4000-3000+1) + 3000;     
 
-            h.ps.print(msg);
-            h.ps.flush();
+                // 测试该端口是否可用
+                try {
+                    server = new ServerSocket(listeningPort);
+                } catch (Exception e) {
+                    continue;
+                }
 
-             server = new ServerSocket(3457);
-             socket = server.accept();
+                // 发送文件头,用户名, IP, port, filename
+                String msg = "P2PFILE" + sp + h.selfName + sp + h.socket.getLocalAddress().getHostAddress() + sp + listeningPort + sp + file.getName()+ lineEnd;
 
-            // test
-            System.out.println("1");
-            // test
+                h.ps.print(msg);
+                h.ps.flush();
+
+                // 等待连接
+                 socket = server.accept();
+
+                break;
+            }
 
              os = new DataOutputStream(socket.getOutputStream());
              is = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)));  
@@ -115,11 +124,6 @@ public class PeerProcessor {
                 os.write(buf, 0, read); 
             }
             os.flush();
-
-            // test
-            System.out.println("2");
-            // test
-
         }catch (IOException e) {  
             e.printStackTrace();  
         } finally {  
@@ -144,18 +148,17 @@ public class PeerProcessor {
             } 
     }
 
-    public static void receiveFile(String ip, String savePath) { 
+    public static void receiveFile(String ip, int port, String savePath) { 
         int progress = 0;
         Socket socket;
 
         // test
-        System.out.println("I am trying to receiveFile: " + savePath + " from: " + ip);
+        System.out.println("I am trying to receiveFile: " + savePath + " from: " + ip + ":" + port);
         // test
 
         try {
             // 建立socket连接
-            socket = new Socket(ip, 3457);
-
+            socket = new Socket(ip, port);
 
             // test
             System.out.println("connections success!");
@@ -201,7 +204,9 @@ public class PeerProcessor {
             }
             System.out.println();
             System.out.println("接收完成，文件存为: " + savePath);  
+            
             fileOut.close();
+            inputStream.close();
             socket.close();
         } catch (Exception e) {
             System.err.println("File Server Excetption: " + e);
@@ -261,18 +266,17 @@ public class PeerProcessor {
         // process it depending on the first line's information
         // If it is a hello msg, just return the array and ignore the rest
         // hello msg format: ["MINET"/"MIRO", hostname]
+
         buff = reader.readLine();
+        if (buff == null) {
+            return null;
+        }
         System.out.println(buff);
 
         String[] temp = buff.split(sp);
-        if ((temp[0].equals("MINET"))|| (temp[0].equals("MIRO")))
-            return temp;
 
-        if (temp[0].equals("P2PFILE")) {
-            // p2pfile format: ["P2PFILE", userName, IP, FileName]
-            receiveFile(temp[2], temp[3]);
+        if ((temp[0].equals("MINET"))|| (temp[0].equals("MIRO")) || (temp[0].equals("P2PFILE")))
             return temp;
-        }
 
         // If it is not a hello msg, then remove the first element:protocol header
         String[] parts = Arrays.copyOfRange(temp, 1, temp.length);

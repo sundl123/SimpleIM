@@ -19,10 +19,10 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
     public PeerHost ph;
 
     // GUI component
-    public TextField tfEdit = new TextField(100);
-    public Button btSend = new Button("send");
-    public Button btSendFile = new Button("File");
-    public TextArea taChat = new TextArea(30, 50);
+    public TextField tfEdit = new TextField(45);
+    public JButton btSend = new JButton("send");
+    public JButton btSendFile = new JButton("File");
+    public TextArea taChat = new TextArea(30, 65);
     public JMenuItem quitMenuItem;
 
     public PrivateChatFrame(Socket s_, String selfName, int mode_) {
@@ -105,6 +105,15 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
         panelL.add(btSendFile);
         btSendFile.addActionListener(new OpenHandler());
         btSend.addActionListener(this);
+        // 按下Enter之后自动触发start键
+        tfEdit.addKeyListener(new KeyAdapter(){
+           public void keyPressed(KeyEvent ke){
+            if(ke.getKeyChar() == ke.VK_ENTER){
+                btSend.doClick();
+            }
+           }
+          }
+        ) ;
 
         this.add(panelM, BorderLayout.CENTER);
         this.add(panelL, BorderLayout.SOUTH);
@@ -122,6 +131,9 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
         this.setVisible(true);
         this.pack();
         this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+
+        // 默认获取焦点
+        tfEdit.requestFocus();
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -140,6 +152,23 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        this.pack();
+    }
+
+    public void printSystemMsg(String msg) {
+            // 居中打印提示信息
+            int c = this.taChat.getColumns();
+
+            if (c > msg.length()) {
+                char[] sp = new char[(c - msg.length())/2];
+                for (int i =0; i < sp.length; i++) {
+                    sp[i] = ' ';
+                }
+                msg = "\n" + new String(sp) + msg + "\n\n";
+            }
+
+            this.taChat.append(msg);
+            this.pack();
     }
 
     class OpenHandler implements ActionListener {
@@ -147,9 +176,9 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
             JFileChooser jc = new JFileChooser();
             int rVal = jc.showOpenDialog(PrivateChatFrame.this);  //显示打开文件的对话框
             if(rVal == JFileChooser.APPROVE_OPTION) {
-                String dir=jc.getCurrentDirectory().toString();
-                String file=jc.getSelectedFile().getName();
-                PeerProcessor.sendFile(PrivateChatFrame.this.ph, dir+ "/" + file);
+                String path = jc.getCurrentDirectory().toString() +  System.getProperty("file.separator")  + jc.getSelectedFile().getName();
+                printSystemMsg("你尝试发送文件: " + jc.getSelectedFile().getName());
+                PeerProcessor.sendFile(PrivateChatFrame.this.ph, path);
             }
         }
     }

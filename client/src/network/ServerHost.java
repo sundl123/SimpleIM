@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import javax.swing.*;
 import com.sdl.MinetClient.gui.GroupChatFrame;
 import com.sdl.MinetClient.gui.MailFrame;
 
@@ -79,6 +80,8 @@ public class ServerHost extends Thread{
             }
         }
 
+        mf.printSystemMsg("你加入了聊天室");
+
         // 获取在线用户清单
         while(true) {
             ServerProcessor.getList(this);
@@ -120,6 +123,11 @@ public class ServerHost extends Thread{
                 continue;
             }
 
+            // 检测流末尾
+            if (contents == null) {
+                continue;
+            }
+
             System.out.println("Processing new arrays");
             for (int i = 0; i < contents.length; i++) {
                             System.out.println(contents[i]);
@@ -134,6 +142,9 @@ public class ServerHost extends Thread{
                         if (mf.peers.get(idx).hostName.equals(contents[2]))
                             break;
                     }
+
+                    mf.printSystemMsg(contents[2]+ "加入了聊天室");
+
                     if (idx != mf.peers.size()) {
                         mf.peers.get(idx).status = true;
                         mf.peers.get(idx).selfName = selfName;
@@ -154,6 +165,7 @@ public class ServerHost extends Thread{
                         if (mf.peers.get(idx).hostName.equals(contents[2]))
                             break;
                     }
+                    mf.printSystemMsg(contents[2]+ "离开了聊天室");
                     if (idx != mf.peers.size()) {
                         //修改状态和标签
                         mf.peers.get(idx).status = false;
@@ -167,8 +179,16 @@ public class ServerHost extends Thread{
                 String data = contents[1] + "(" + contents[2] + "): " + contents[contents.length -1];
                 mf.taChat.append(data);
             } else if (contents[0].equals("EMAIL")) {
-                new MailFrame(this.mf, MailFrame.READ_MODE, contents);
+                Object[] options = {"查看", "忽略"};
+                int sel = JOptionPane.showOptionDialog(null, "收到" + contents[1] + "的邮件" + contents[4], "新邮件", 
+                    JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                    null, options, options[0]);
+
+                if (sel == 0) {
+                    new MailFrame(this.mf, MailFrame.READ_MODE, contents);
+                }
             }
+            mf.pack();
         }
     }
     public void close() {

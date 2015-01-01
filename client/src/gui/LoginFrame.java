@@ -27,14 +27,14 @@ public class LoginFrame extends JFrame implements ActionListener{
     public int peerPort = -1;
 
     // gui component
-    Label labelAddr = new Label("Server IP:");
+    Label labelAddr = new Label("Server  IP:");
     Label labelPort = new Label("Server Port:");
-    Label lName = new Label("Nick Name:");
+    Label lName = new Label("Nick  Name:");
 
     TextField tfAddr = new TextField(15);
     TextField tfPort = new TextField(15);
     TextField tfName = new TextField(15);
-    Button btStart = new Button("Start");
+    JButton btStart = new JButton("Start");
 
     JRadioButtonMenuItem csMode;
     JRadioButtonMenuItem p2pServMode;
@@ -58,6 +58,16 @@ public class LoginFrame extends JFrame implements ActionListener{
         panel3.add(tfName);
         panel4.add(btStart);
         btStart.addActionListener(this);
+
+        // 按下Enter之后自动触发start键
+        tfName.addKeyListener(new KeyAdapter(){
+           public void keyPressed(KeyEvent ke){
+            if(ke.getKeyChar() == ke.VK_ENTER){
+                btStart.doClick();
+            }
+           }
+          }
+        ) ;
 
         this.add(panel1);
         this.add(panel2);
@@ -95,6 +105,9 @@ public class LoginFrame extends JFrame implements ActionListener{
         pack();
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+
+        // 默认获取焦点
+        tfName.requestFocus();
     }
     public void setMode(int mode_) {
         this.mode = mode_;
@@ -107,7 +120,7 @@ public class LoginFrame extends JFrame implements ActionListener{
                 this.labelPort.setEnabled(true);
 
                 // 修改默认字符串
-                this.labelAddr.setText("Server IP:");
+                this.labelAddr.setText("Server     IP:");
                 this.tfAddr.setText(this.serverIP);
                 this.labelPort.setText("Server Port:");
                 this.tfPort.setText("" + this.serverPort);
@@ -121,7 +134,7 @@ public class LoginFrame extends JFrame implements ActionListener{
                 this.tfPort.setEnabled(true);
 
                 // 修改默认字符串
-                this.labelPort.setText("Listen to Port:");
+                this.labelPort.setText("Listen Port:");
 
                 if (this.listeningPort == -1) {
                     // 如果默认监听端口随机，自动生成一个随机端口号(2000-3000)
@@ -139,14 +152,15 @@ public class LoginFrame extends JFrame implements ActionListener{
                 this.labelPort.setEnabled(true);
 
                 // 修改默认字符串
-                this.labelAddr.setText("Peer IP:");
+                this.labelAddr.setText("Peer      IP:");
                 this.tfAddr.setText(this.peerIP);
-                this.labelPort.setText("Peer Port:");
+                this.labelPort.setText("Peer   Port:");
                 if (this.peerPort != -1) {
                     this.tfPort.setText("" + this.peerPort);
                 }
                 break;
         }
+        this.pack();
     }
     public void actionPerformed(ActionEvent e) {
         try {
@@ -162,7 +176,15 @@ public class LoginFrame extends JFrame implements ActionListener{
                             Random r = new Random();
                             this.listeningPort = r.nextInt(3000) % (3000-2000+1) + 2000;     
                         }
-                        Socket s = new Socket(this.serverIP, this.serverPort);
+                        Socket s;
+                        try  {
+                            s = new Socket(this.serverIP, this.serverPort);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null,
+                                "服务器无法连接！", "Fail",
+                                JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
                         new GroupChatFrame(s, this.listeningPort, this.name);
                         this.dispose();
                     }
@@ -170,8 +192,17 @@ public class LoginFrame extends JFrame implements ActionListener{
                     case P2P_SERVER_MODE: {
                         this.listeningPort = Integer.parseInt(tfPort.getText());
                         this.name = tfName.getText();
-                        ServerSocket ss = new ServerSocket(this.listeningPort);
-                        Socket s = ss.accept();
+                        ServerSocket ss;
+                        Socket s;
+                        try  {
+                            ss = new ServerSocket(this.listeningPort);
+                            s = ss.accept();
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null,
+                                "网络不畅通！", "Fail",
+                                JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
                         new PrivateChatFrame(s, this.name, PrivateChatFrame.PASSIVE);
                         ss.close();
                         this.dispose();
@@ -181,7 +212,15 @@ public class LoginFrame extends JFrame implements ActionListener{
                         this.serverIP = tfAddr.getText();
                         this.serverPort = Integer.parseInt(tfPort.getText());
                         this.name = tfName.getText();
-                        Socket s = new Socket(this.serverIP, this.serverPort);
+                        Socket s;
+                        try  {
+                            s = new Socket(this.serverIP, this.serverPort);
+                        } catch (Exception ex) {
+                            JOptionPane.showMessageDialog(null,
+                                "对方可能不在线", "Fail",
+                                JOptionPane.ERROR_MESSAGE);
+                            return;
+                        }
                         new PrivateChatFrame(s, this.name, PrivateChatFrame.INITIATIVE);
                         this.dispose();
                     }
@@ -197,9 +236,5 @@ public class LoginFrame extends JFrame implements ActionListener{
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-    }
-
-    public static void main(String[] args) {
-        new LoginFrame();
     }
 }

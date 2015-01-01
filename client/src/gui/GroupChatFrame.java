@@ -21,14 +21,25 @@ public class GroupChatFrame extends JFrame implements ActionListener{
     public PeerListener pl;
 
     // GUI component
-    public TextField tfEdit = new TextField(100);
-    public Button btSend = new Button("send");
+    public TextField tfEdit = new TextField(55);
+    public JButton btSend = new JButton("send");
     public TextArea taChat = new TextArea(30, 50);
-    public java.awt.List list1 = new java.awt.List(25);
+    public java.awt.List list1 = new java.awt.List(27);
     public JMenuItem quitMenuItem;
     public JMenuItem mailMenuItem;
 
     public GroupChatFrame(Socket s, int listeningPort_, String name_) {
+        // SET UP INTERNET CONNECTION
+        peers = new ArrayList<PeerHost>();
+        this.name = name_;
+        this.listeningPort = listeningPort_;
+        // start to listen to server
+        sh = new ServerHost(this, s, this.name, this.listeningPort);
+        sh.start();
+
+        // start a thread that accepts other peers's connection;
+        pl = new PeerListener(this, this.listeningPort);
+        pl.start();
 
         // SET UP GUI
         this.setLayout(new BorderLayout());
@@ -47,6 +58,15 @@ public class GroupChatFrame extends JFrame implements ActionListener{
         panelL.add(tfEdit);
         panelL.add(btSend);
         btSend.addActionListener(this);
+        // 按下Enter之后自动触发start键
+        tfEdit.addKeyListener(new KeyAdapter(){
+           public void keyPressed(KeyEvent ke){
+            if(ke.getKeyChar() == ke.VK_ENTER){
+                btSend.doClick();
+            }
+           }
+          }
+        ) ;
 
         this.add(panelM, BorderLayout.CENTER);
         this.add(panelL, BorderLayout.SOUTH);
@@ -68,17 +88,8 @@ public class GroupChatFrame extends JFrame implements ActionListener{
         this.pack();
         this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
-        // SET UP INTERNET CONNECTION
-        peers = new ArrayList<PeerHost>();
-        this.name = name_;
-        this.listeningPort = listeningPort_;
-        // start to listen to server
-        sh = new ServerHost(this, s, this.name, this.listeningPort);
-        sh.start();
-
-        // start a thread that accepts other peers's connection;
-        pl = new PeerListener(this, this.listeningPort);
-        pl.start();
+        // 默认获取焦点
+        tfEdit.requestFocus();
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -90,6 +101,7 @@ public class GroupChatFrame extends JFrame implements ActionListener{
                 // stop accepting peers' connections
                 this.pl.close();
                 this.dispose();
+                System.exit(0);
             } else if (e.getSource() == btSend) {
                 // 发消息给服务器
                 String dat = ServerProcessor.sendMsg(this.sh, tfEdit.getText());
@@ -103,16 +115,47 @@ public class GroupChatFrame extends JFrame implements ActionListener{
                 for (int i =0; i < this.peers.size(); i++) {
                     System.out.println(this.peers.get(i).hostName);
                     if ((this.peers.get(i).hostName+"-Online").equals(this.list1.getSelectedItem())) {
-                        peers.get(i).connectPeer();
-                        peers.get(i).start();
+                        // 新建一个相同的PeerHost处理业务
+                        PeerHost newPh = new PeerHost();
+                        newPh.hostName = peers.get(i).hostName;
+                        newPh.selfName = peers.get(i).selfName;
+                        newPh.ip = peers.get(i).ip;
+                        newPh.chatText = peers.get(i).chatText;
+                        newPh.listeningPort = peers.get(i).listeningPort;
+                        newPh.status = peers.get(i).status;
+                        newPh.isRun = true;
+                        newPh.isHello = false;
+
+                        peers.remove(i);
+                        peers.add(newPh);
+
+                        newPh.connectPeer();
+                        newPh.start();
                     }
                 }
             } else if (e.getSource() == mailMenuItem) {
                 new MailFrame(this, MailFrame.EDIT_MODE, null);
             }
+            this.pack();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    public void printSystemMsg(String msg) {
+            // 居中打印提示信息
+            int c = this.taChat.getColumns();
+
+            if (c > msg.length()) {
+                char[] sp = new char[(c - msg.length())/2];
+                for (int i =0; i < sp.length; i++) {
+                    sp[i] = ' ';
+                }
+                msg = "\n" + new String(sp) + msg + "\n\n";
+            }
+
+            this.taChat.append(msg);
+            this.pack();
     }
 
     class PeerListener extends Thread {
@@ -152,10 +195,9 @@ public class GroupChatFrame extends JFrame implements ActionListener{
                                 newPh.ip = peers.get(i).ip;
                                 newPh.chatText = peers.get(i).chatText;
                                 newPh.listeningPort = peers.get(i).listeningPort;
-
+                                newPh.status = peers.get(i).status;
                                 newPh.isRun = true;
                                 newPh.isHello = true;
-                                newPh.status = peers.get(i).status;
 
                                 PeerProcessor.hello(newPh);
 

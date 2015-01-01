@@ -13,68 +13,74 @@ public class MailFrame extends JFrame implements ActionListener{
     public GroupChatFrame gcf;
 
     // GUI component
-    public TextField tfFrom = new TextField(15);;
-    public TextField tfTo = new TextField(15);
-    public TextField tfTitle = new TextField(15);
-    public TextArea taMsg = new TextArea(30, 50);
-    public Button btSend = new Button("Send");
-    public Button btClear = new Button("Clear");
-    public Button btQuit = new Button("Quit");
+    public TextField tfFrom = new TextField(30);;
+    public TextField tfTo = new TextField(30);
+    public TextField tfTitle = new TextField(30);
+    public TextArea taMsg = new TextArea(20, 20);
+    public JButton btSend = new JButton("Send");
+    public JButton btClear = new JButton("Clear");
+    public JButton btQuit = new JButton("Quit");
 
     public MailFrame(GroupChatFrame gcf_, int mode, String[] contents){
         gcf = gcf_;
 
-        // set up GUI
-        this.setLayout(new GridLayout(6,1,2,5));
+        // set up gui
+        this.setLayout(new BorderLayout());
 
+        JPanel panelN = new JPanel(new GridLayout(4, 1));
         JPanel panel1 = new JPanel();
         JPanel panel2 = new JPanel();
         JPanel panel3 = new JPanel();
-        JPanel panel4 = new JPanel();
 
-        Label label = new Label("From:");
+        Label label = new Label("     From:");
         panel1.add(label);
         panel1.add(tfFrom);
-
-        label = new Label("To:");
+        label = new Label("         To:");
         panel2.add(label);
         panel2.add(tfTo);        
-
         label = new Label("Subject:");
         panel3.add(label);
         panel3.add(tfTitle);
+        label = new Label("Message: ");
 
-        panel4.add(btSend);
-        panel4.add(btClear);
-        panel4.add(btQuit);
+        panelN.add(panel1);
+        panelN.add(panel2);
+        panelN.add(panel3);
+        panelN.add(label);
+
+        JPanel panelS = new JPanel();
+        panelS.add(btSend);
+        panelS.add(btClear);
+        panelS.add(btQuit);
         btSend.addActionListener(this);
         btClear.addActionListener(this);
         btQuit.addActionListener(this);
 
-        label = new Label("Message:");
-        this.add(panel1);
-        this.add(panel2);
-        this.add(panel3);
-        this.add(label);
-        this.add(taMsg);
-        this.add(panel4);
+        this.add(panelN, BorderLayout.NORTH);
+        this.add(taMsg, BorderLayout.CENTER);
+        this.add(panelS, BorderLayout.SOUTH);
 
         if (mode == READ_MODE) {
             // mail format:["EMAIL", sender, date, length, title, data]
-            this.btSend.setEnabled(false);
-            this.btClear.setEnabled(false);
             this.tfFrom.setText(contents[1]);
             this.tfTo.setText("Me");
             this.tfTitle.setText(contents[4]);
             this.taMsg.setText(contents[contents.length-1]);
+            this.tfFrom.setEnabled(false);
+            this.tfTo.setEnabled(false);
+            this.tfTitle.setEnabled(false);
+            this.taMsg.setEnabled(false);
+            this.btSend.setEnabled(false);
+            this.btClear.setEnabled(false);
         } else {
             this.tfFrom.setText("Me");
+            this.tfFrom.setEnabled(false);
         }
 
         // set visible
         this.setVisible(true);
-        this.setSize(400,600);
-        this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+        this.pack();
+        this.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -83,9 +89,11 @@ public class MailFrame extends JFrame implements ActionListener{
             for (int i = 0; i < gcf.peers.size(); i++) {
                 if (gcf.peers.get(i).hostName.equals(tfTo.getText())){
                     ServerProcessor.sendMail(gcf.sh, tfTo.getText(), tfTitle.getText(), taMsg.getText());
+                    JOptionPane.showMessageDialog(null, "邮件" + tfTitle.getText() + "已发给" + tfTo.getText(), "发送成功",JOptionPane.INFORMATION_MESSAGE);  
                     return;
                 }
             }
+            JOptionPane.showMessageDialog(null, "收件人" + tfTo.getText() + "不在列表中", "发送失败",JOptionPane.ERROR_MESSAGE);  
         } else if (e.getSource() == btClear) {
             this.taMsg.setText("");
         } else if (e.getSource() == btQuit) {

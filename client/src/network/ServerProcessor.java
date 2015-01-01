@@ -115,6 +115,10 @@ public class ServerProcessor {
         // If it is a hello msg, just return the array and ignore the rest
         // hello msg format: ["MINET"/"MIRO", hostname]
         buff = h.reader.readLine();
+        if (buff == null) {
+            return null;
+        }
+
         System.out.println(buff);
 
         String[] temp = buff.split(sp);
