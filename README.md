@@ -4,11 +4,11 @@
 1.聊天窗口点击关闭按钮无法退出服务器
 
 ### 优化：
-1.聊天窗口增加了聊天记录保存的功能，并根据当前时间生成默认文件名
-2.增加了@语法，一个用户可以@另外一个用户，另一个用户弹出提示框
-3.提供了播放声音的提示，用户打开程序之后，会有背景音乐和提示声（新的聊天信息，用户下线和上线），当然可以通过设置将其关闭
-4.固定了窗口大小，禁止用户随意调整窗口破坏布局
-5.增加了窗口背景图
+1.聊天窗口增加了聊天记录保存的功能，并根据当前时间生成默认文件名</br>
+2.增加了@语法，一个用户可以@另外一个用户，另一个用户弹出提示框</br>
+3.提供了播放声音的提示，用户打开程序之后，会有背景音乐和提示声（新的聊天信息，用户下线和上线），当然可以通过设置将其关闭</br>
+4.固定了窗口大小，禁止用户随意调整窗口破坏布局</br>
+5.增加了窗口背景图</br>
 
 ##2015年1月1日 星期四
 ### BUG修复
@@ -102,51 +102,51 @@ ServerProcessor.java：用于实现与服务端的交互协议。功能类似于
     聊天头像
 
 ##协议补充
-文件传输功能
-客户端发到客户端
-CS1.0 sp P2PMESSAGE sp 用户名 cr lf
-Date
-Content-Length
-Content-Type
-FileName
-FileLength
-data...
-
-
-客户端到服务端
-CS1.0 sp MESSAGE sp 用户名 cr lf
-
-Date
-Content-Length
-Content-Type
-FileName
-FileLength
-userNum
-name1
-name2
-name3
-
-data...
-
-
-服务端到客户端
-CS1.0 sp CSMESSAGE sp 用户名 cr lf
-Date
-Content-Length
-Content-Type
-FileName
-FileLength
-usrName
-data...
-data...
-
-CS1.0 sp EMAIL sp 用户名 cr lf
-Date
-Content-Length
-receiver
-Title:
-data
-data
-
-
-
+文件传输功能</br>
+客户端发到客户端</br>
+CS1.0 sp P2PMESSAGE sp 用户名 cr lf</br>
+Date</br>
+Content-Length</br>
+Content-Type</br>
+FileName</br>
+FileLength</br>
+data...</br>
+</br>
+</br>
+客户端到服务端</br>
+CS1.0 sp MESSAGE sp 用户名 cr lf</br>
+</br>
+Date</br>
+Content-Length</br>
+Content-Type</br>
+FileName</br>
+FileLength</br>
+userNum</br>
+name1</br>
+name2</br>
+name3</br>
+</br>
+data...</br>
+</br>
+</br>
+服务端到客户端</br>
+CS1.0 sp CSMESSAGE sp 用户名 cr lf</br>
+Date</br>
+Content-Length</br>
+Content-Type</br>
+FileName</br>
+FileLength</br>
+usrName</br>
+data...</br>
+data...</br>
+</br>
+CS1.0 sp EMAIL sp 用户名 cr lf</br>
+Date</br>
+Content-Length</br>
+receiver</br>
+Title:</br>
+data</br>
+data</br>
+</br>
+</br>
+</br>
