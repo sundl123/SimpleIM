@@ -83,6 +83,9 @@ public class GroupChatFrame extends JFrame implements ActionListener{
         mb.add(cMenu);
         this.setJMenuBar(mb);
 
+        // 注册窗口事件监听器
+        this.addWindowListener(new MyWinAdapter());
+
         // set visible
         this.setVisible(true);
         this.pack();
@@ -215,6 +218,17 @@ public class GroupChatFrame extends JFrame implements ActionListener{
             }  catch (Exception ex) {
                 ex.printStackTrace();
             }
+        }
+    }
+
+    class MyWinAdapter extends WindowAdapter {
+        public void windowClosing(WindowEvent e) {
+            // stop listening thread
+            sh.close();
+
+            // stop accepting peers' connections
+            pl.close();
+            System.exit(0);
         }
     }
 }

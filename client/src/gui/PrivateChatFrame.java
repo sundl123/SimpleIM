@@ -127,10 +127,13 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
         mb.add(cMenu);
         this.setJMenuBar(mb);
 
+        // 注册窗口事件监听器
+        this.addWindowListener(new MyWinAdapter());
+
         // set visible
         this.setVisible(true);
         this.pack();
-        this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+        this.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 
         // 默认获取焦点
         tfEdit.requestFocus();
@@ -180,6 +183,13 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
                 printSystemMsg("你尝试发送文件: " + jc.getSelectedFile().getName());
                 PeerProcessor.sendFile(PrivateChatFrame.this.ph, path);
             }
+        }
+    }
+
+    class MyWinAdapter extends WindowAdapter {
+        public void windowClosing(WindowEvent e) {
+                // stop listening thread
+                ph.close();
         }
     }
 }
