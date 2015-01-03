@@ -3,6 +3,7 @@ package com.sdl.MinetClient.gui;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
+import java.net.URL;
 import com.sdl.MinetClient.network.ServerProcessor;
 
 
@@ -13,10 +14,10 @@ public class MailFrame extends JFrame implements ActionListener{
     public GroupChatFrame gcf;
 
     // GUI component
-    public TextField tfFrom = new TextField(30);;
-    public TextField tfTo = new TextField(30);
-    public TextField tfTitle = new TextField(30);
-    public TextArea taMsg = new TextArea(20, 20);
+    public JTextField tfFrom = new JTextField(30);;
+    public JTextField tfTo = new JTextField(30);
+    public JTextField tfTitle = new JTextField(30);
+    public JTextArea taMsg = new JTextArea(20, 20);
     public JButton btSend = new JButton("Send");
     public JButton btClear = new JButton("Clear");
     public JButton btQuit = new JButton("Quit");
@@ -25,30 +26,50 @@ public class MailFrame extends JFrame implements ActionListener{
         gcf = gcf_;
 
         // set up gui
+        // 设置背景图片
+        URL url = getClass().getResource("/resource/EmailBG.jpg");
+        ImageIcon img = new ImageIcon(url);
+        JLabel imgLabel = new JLabel(img);
+        this.getLayeredPane().add(imgLabel, new Integer(Integer.MIN_VALUE));
+        imgLabel.setBounds(0, 0, img.getIconWidth(), img.getIconHeight());
+        JPanel jp = (JPanel)getContentPane();
+        jp.setOpaque(false);
+
         this.setLayout(new BorderLayout());
 
         JPanel panelN = new JPanel(new GridLayout(4, 1));
         JPanel panel1 = new JPanel();
         JPanel panel2 = new JPanel();
         JPanel panel3 = new JPanel();
+        panelN.setOpaque(false);
+        panel1.setOpaque(false);
+        panel2.setOpaque(false);
+        panel3.setOpaque(false);
 
-        Label label = new Label("     From:");
+        JLabel label = new JLabel("     From:");
+        label.setOpaque(false);
         panel1.add(label);
         panel1.add(tfFrom);
-        label = new Label("         To:");
+        label = new JLabel("         To:");
+        label.setOpaque(false);
         panel2.add(label);
         panel2.add(tfTo);        
-        label = new Label("Subject:");
+        label = new JLabel("Subject:");
+        label.setOpaque(false);
         panel3.add(label);
         panel3.add(tfTitle);
-        label = new Label("Message: ");
+        label = new JLabel("Message: ");
+        label.setOpaque(false);
 
         panelN.add(panel1);
         panelN.add(panel2);
         panelN.add(panel3);
         panelN.add(label);
 
+
+
         JPanel panelS = new JPanel();
+        panelS.setOpaque(false);
         panelS.add(btSend);
         panelS.add(btClear);
         panelS.add(btQuit);
@@ -57,7 +78,15 @@ public class MailFrame extends JFrame implements ActionListener{
         btQuit.addActionListener(this);
 
         this.add(panelN, BorderLayout.NORTH);
-        this.add(taMsg, BorderLayout.CENTER);
+
+        JScrollPane jsp = new JScrollPane(taMsg);
+        jsp.setOpaque(false);
+        jsp.getViewport().setOpaque(false);
+        jsp.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        jsp.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        taMsg.setOpaque(false);
+
+        this.add(jsp, BorderLayout.CENTER);
         this.add(panelS, BorderLayout.SOUTH);
 
         if (mode == READ_MODE) {
@@ -80,6 +109,8 @@ public class MailFrame extends JFrame implements ActionListener{
         // set visible
         this.setVisible(true);
         this.pack();
+        this.setSize(440,550);
+        this.setResizable(false);
         this.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
     }
 

@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import javax.swing.*;
 import com.sdl.MinetClient.gui.GroupChatFrame;
+import com.sdl.MinetClient.gui.MusicPlayer;
 import com.sdl.MinetClient.gui.MailFrame;
 
 public class ServerHost extends Thread{
@@ -49,6 +50,7 @@ public class ServerHost extends Thread{
                     ex.printStackTrace();
                 }
     }
+
     public void run() {
         String[] contents;
         // 不停地尝试hello
@@ -81,6 +83,7 @@ public class ServerHost extends Thread{
         }
 
         mf.printSystemMsg("你加入了聊天室");
+        MusicPlayer.login();
 
         // 获取在线用户清单
         while(true) {
@@ -144,6 +147,7 @@ public class ServerHost extends Thread{
                     }
 
                     mf.printSystemMsg(contents[2]+ "加入了聊天室");
+                    MusicPlayer.login();
 
                     if (idx != mf.peers.size()) {
                         mf.peers.get(idx).status = true;
@@ -165,7 +169,10 @@ public class ServerHost extends Thread{
                         if (mf.peers.get(idx).hostName.equals(contents[2]))
                             break;
                     }
+
                     mf.printSystemMsg(contents[2]+ "离开了聊天室");
+                    MusicPlayer.logout();
+
                     if (idx != mf.peers.size()) {
                         //修改状态和标签
                         mf.peers.get(idx).status = false;
@@ -178,7 +185,15 @@ public class ServerHost extends Thread{
                 // csmessage format: ["CSMESSAGE", user name, date, length, data]
                 String data = contents[1] + "(" + contents[2] + "): " + contents[contents.length -1];
                 mf.taChat.append(data);
+                MusicPlayer.newMsg();
+
+                // 查看是否有@符号
+                if (contents[contents.length -1].indexOf("@" + this.selfName) != -1) {
+                    // 提示用户有人@了他/她
+                    JOptionPane.showMessageDialog(null, contents[1] + "刚才@了你", "提醒",JOptionPane.INFORMATION_MESSAGE);  
+                }
             } else if (contents[0].equals("EMAIL")) {
+                MusicPlayer.newMsg();
                 Object[] options = {"查看", "忽略"};
                 int sel = JOptionPane.showOptionDialog(null, "收到" + contents[1] + "的邮件" + contents[4], "新邮件", 
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,

@@ -3,16 +3,17 @@ package com.sdl.MinetClient.network;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.io.InputStreamReader;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.InetAddress;
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import com.sdl.MinetClient.gui.PrivateChatFrame;
+import com.sdl.MinetClient.gui.MusicPlayer;
 
 public class PeerHost extends Thread{
     public Socket socket;
@@ -135,6 +136,7 @@ public class PeerHost extends Thread{
                             System.out.println(contents[i]);
             }
             if (contents[0].equals("P2PMESSAGE")) {
+                MusicPlayer.newMsg();
                 // p2p msg format:["P2PMESSAGE", name, date, length, ..., data]
                 if (contents[contents.length - 1].startsWith("CONTROLMSG: REJECTFILE")) {
                     mf.printSystemMsg(hostName + "拒绝了请求");
@@ -156,6 +158,7 @@ public class PeerHost extends Thread{
                 }
                 this.mf.dispose();
             } else if (contents[0].equals("P2PFILE")) {
+                MusicPlayer.newMsg();
                 mf.printSystemMsg(contents[1] + " 尝试发送文件: " + contents[4]);
 
                 // 询问用户是否保存和保存位置
@@ -184,7 +187,7 @@ public class PeerHost extends Thread{
                     PeerProcessor.receiveFile(contents[2], Integer.parseInt(contents[3]), path);
 
                     // 提示用户下载成功
-                    JOptionPane.showMessageDialog(null, "文件保存在" + path, "下载成功",JOptionPane.PLAIN_MESSAGE);  
+                    JOptionPane.showMessageDialog(null, "文件保存在" + path, "下载成功",JOptionPane.INFORMATION_MESSAGE);  
                 } else {
                     mf.printSystemMsg("你拒绝了请求");
                     PeerProcessor.sendMsg(this, "CONTROLMSG: REJECTFILE");

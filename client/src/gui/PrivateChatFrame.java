@@ -2,13 +2,18 @@ package com.sdl.MinetClient.gui;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.awt.*;
+import java.util.Random;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.io.File;
+import java.io.FileOutputStream;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.*;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.InetAddress;
-import java.util.Random;
+import java.net.URL;
 import com.sdl.MinetClient.network.*;
 
 public class PrivateChatFrame extends JFrame implements ActionListener{
@@ -19,11 +24,12 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
     public PeerHost ph;
 
     // GUI component
-    public TextField tfEdit = new TextField(45);
+    public JTextField tfEdit = new JTextField(45);
     public JButton btSend = new JButton("send");
     public JButton btSendFile = new JButton("File");
-    public TextArea taChat = new TextArea(30, 65);
+    public JTextArea taChat = new JTextArea(30, 65);
     public JMenuItem quitMenuItem;
+    public JMenuItem saveMenuItem;
 
     public PrivateChatFrame(Socket s_, String selfName, int mode_) {
         this.setUpGUI();
@@ -89,16 +95,34 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
     private void setUpGUI() {
 
         // SET UP GUI
+        // 设置背景图片
+        URL url = getClass().getResource("/resource/PrivateChatBG.jpg");
+        ImageIcon img = new ImageIcon(url);
+        JLabel imgLabel = new JLabel(img);
+        this.getLayeredPane().add(imgLabel, new Integer(Integer.MIN_VALUE));
+        imgLabel.setBounds(0, 0, img.getIconWidth(), img.getIconHeight());
+        JPanel jp = (JPanel)getContentPane();
+        jp.setOpaque(false);
+
         this.setLayout(new BorderLayout());
 
         JPanel panelM = new JPanel();
         JPanel panelL = new JPanel();
+        panelM.setOpaque(false);
+        panelM.setOpaque(false);
 
         // set up CENTER
-        panelM.add(taChat);
+        JScrollPane jsp = new JScrollPane(taChat);
+        jsp.setOpaque(false);
+        jsp.getViewport().setOpaque(false);
+        jsp.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        jsp.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        taChat.setOpaque(false);
+        panelM.add(jsp);
 
         // set up SOUTH
-        Label lEdit = new Label("New Msg:");
+        JLabel lEdit = new JLabel("New Msg:");
+        lEdit.setOpaque(false);
         panelL.add(lEdit);
         panelL.add(tfEdit);
         panelL.add(btSend);
@@ -120,9 +144,13 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
 
         // set up menu item
         JMenu cMenu = new JMenu("Connection");
+        saveMenuItem= new JMenuItem("Save Chat");
         quitMenuItem= new JMenuItem("Quit");
         quitMenuItem.addActionListener(this);
+        saveMenuItem.addActionListener(this);
+
         JMenuBar mb = new JMenuBar();
+        cMenu.add(saveMenuItem);
         cMenu.add(quitMenuItem);
         mb.add(cMenu);
         this.setJMenuBar(mb);
@@ -133,6 +161,8 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
         // set visible
         this.setVisible(true);
         this.pack();
+        this.setSize(760,570);
+        //this.setResizable(false);
         this.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 
         // 默认获取焦点
@@ -151,6 +181,27 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
                 String dat = PeerProcessor.sendMsg(this.ph, tfEdit.getText());
                 taChat.append("Yourself(" +  dat + "): "+ tfEdit.getText() + "\n");
                 tfEdit.setText("");
+            } else if (e.getSource() == saveMenuItem) {
+                // 询问保存地址
+                JFileChooser jc = new JFileChooser();
+                // 设置默认文件名
+                JTextField text;
+                text=getTextField(jc);
+                text.setText("Minet "+ getCurDate()+ ".txt");
+                int rVal = jc.showSaveDialog(this);  ////显示保存文件的对话框
+                String path;
+                if(rVal == JFileChooser.APPROVE_OPTION) {
+                    path = jc.getCurrentDirectory().toString() +  System.getProperty("file.separator")  + jc.getSelectedFile().getName();
+
+                    // 保存文件
+                    File file = new File(path);
+                    if (!file.exists()) {
+                        file.createNewFile();
+                    }
+                    FileOutputStream out = new FileOutputStream(file, true);
+                    out.write(taChat.getText().getBytes("utf-8"));
+                    out.close();
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -173,6 +224,29 @@ public class PrivateChatFrame extends JFrame implements ActionListener{
             this.taChat.append(msg);
             this.pack();
     }
+
+    public static String getCurDate() {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+        return df.format(new Date());// new Date()为获取当前系统时间
+    }
+
+    public JTextField getTextField(Container c) {
+            JTextField textField = null;
+            for (int i = 0; i < c.getComponentCount(); i++) {
+                Component cnt = c.getComponent(i);
+                if (cnt instanceof JTextField) {
+                    return (JTextField) cnt;
+                }
+                if (cnt instanceof Container) {
+                    textField = getTextField((Container) cnt);
+                    if (textField != null) {
+                        return textField;
+                    }
+                }
+            }
+            return textField;
+        }
+
 
     class OpenHandler implements ActionListener {
         public void actionPerformed(ActionEvent e) {

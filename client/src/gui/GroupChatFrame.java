@@ -2,13 +2,18 @@ package com.sdl.MinetClient.gui;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Random;
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.InetAddress;
-import java.util.Random;
+import java.net.URL;
 import com.sdl.MinetClient.network.*;
 
 public class GroupChatFrame extends JFrame implements ActionListener{
@@ -21,12 +26,13 @@ public class GroupChatFrame extends JFrame implements ActionListener{
     public PeerListener pl;
 
     // GUI component
-    public TextField tfEdit = new TextField(55);
+    public JTextField tfEdit = new JTextField(55);
     public JButton btSend = new JButton("send");
-    public TextArea taChat = new TextArea(30, 50);
+    public JTextArea taChat = new JTextArea(30, 50);
     public java.awt.List list1 = new java.awt.List(27);
     public JMenuItem quitMenuItem;
     public JMenuItem mailMenuItem;
+    public JMenuItem saveMenuItem;
 
     public GroupChatFrame(Socket s, int listeningPort_, String name_) {
         // SET UP INTERNET CONNECTION
@@ -42,22 +48,41 @@ public class GroupChatFrame extends JFrame implements ActionListener{
         pl.start();
 
         // SET UP GUI
+        // 设置背景图片
+        URL url = getClass().getResource("/resource/GroupChatBG.jpg");
+        ImageIcon img = new ImageIcon(url);
+        JLabel imgLabel = new JLabel(img);
+        this.getLayeredPane().add(imgLabel, new Integer(Integer.MIN_VALUE));
+        imgLabel.setBounds(0, 0, img.getIconWidth(), img.getIconHeight());
+        JPanel jp = (JPanel)getContentPane();
+        jp.setOpaque(false);
+
         this.setLayout(new BorderLayout());
 
         JPanel panelM = new JPanel();
         JPanel panelL = new JPanel();
-
+        panelM.setOpaque(false);
+        panelL.setOpaque(false);
         // set up CENTER
-        panelM.add(taChat);
+        JScrollPane jsp = new JScrollPane(taChat);
+        jsp.setOpaque(false);
+        jsp.getViewport().setOpaque(false);
+        jsp.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        jsp.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        taChat.setOpaque(false);
+        panelM.add(jsp);
+
         panelM.add(list1);
         list1.addActionListener(this);
 
         // set up SOUTH
-        Label lEdit = new Label("New Msg:");
+        JLabel lEdit = new JLabel("New Msg:");
+        lEdit.setOpaque(false);
         panelL.add(lEdit);
         panelL.add(tfEdit);
         panelL.add(btSend);
         btSend.addActionListener(this);
+
         // 按下Enter之后自动触发start键
         tfEdit.addKeyListener(new KeyAdapter(){
            public void keyPressed(KeyEvent ke){
@@ -73,11 +98,15 @@ public class GroupChatFrame extends JFrame implements ActionListener{
 
         // set up menu item
         JMenu cMenu = new JMenu("Connection");
+        saveMenuItem= new JMenuItem("Save Chat");
         mailMenuItem= new JMenuItem("Send Mail");
         quitMenuItem= new JMenuItem("Quit");
+        saveMenuItem.addActionListener(this);
         mailMenuItem.addActionListener(this);
         quitMenuItem.addActionListener(this);
+
         cMenu.add(mailMenuItem);
+        cMenu.add(saveMenuItem);
         cMenu.add(quitMenuItem);
         JMenuBar mb = new JMenuBar();
         mb.add(cMenu);
@@ -89,6 +118,8 @@ public class GroupChatFrame extends JFrame implements ActionListener{
         // set visible
         this.setVisible(true);
         this.pack();
+        this.setSize(760,570);
+        this.setResizable(false);
         this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
 
         // 默认获取焦点
@@ -138,6 +169,27 @@ public class GroupChatFrame extends JFrame implements ActionListener{
                 }
             } else if (e.getSource() == mailMenuItem) {
                 new MailFrame(this, MailFrame.EDIT_MODE, null);
+            } else if (e.getSource() == saveMenuItem) {
+                // 询问保存地址
+                JFileChooser jc = new JFileChooser();
+                // 设置默认文件名
+                JTextField text;
+                text=getTextField(jc);
+                text.setText("Minet "+ getCurDate()+ ".txt");
+                int rVal = jc.showSaveDialog(this);  ////显示保存文件的对话框
+                String path;
+                if(rVal == JFileChooser.APPROVE_OPTION) {
+                    path = jc.getCurrentDirectory().toString() +  System.getProperty("file.separator")  + jc.getSelectedFile().getName();
+
+                    // 保存文件
+                    File file = new File(path);
+                    if (!file.exists()) {
+                        file.createNewFile();
+                    }
+                    FileOutputStream out = new FileOutputStream(file, true);
+                    out.write(taChat.getText().getBytes("utf-8"));
+                    out.close();
+                }
             }
             this.pack();
         } catch (Exception ex) {
@@ -160,6 +212,28 @@ public class GroupChatFrame extends JFrame implements ActionListener{
             this.taChat.append(msg);
             this.pack();
     }
+
+    public static String getCurDate() {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");//设置日期格式
+        return df.format(new Date());// new Date()为获取当前系统时间
+    }
+
+    public JTextField getTextField(Container c) {
+            JTextField textField = null;
+            for (int i = 0; i < c.getComponentCount(); i++) {
+                Component cnt = c.getComponent(i);
+                if (cnt instanceof JTextField) {
+                    return (JTextField) cnt;
+                }
+                if (cnt instanceof Container) {
+                    textField = getTextField((Container) cnt);
+                    if (textField != null) {
+                        return textField;
+                    }
+                }
+            }
+            return textField;
+        }
 
     class PeerListener extends Thread {
         boolean isRun = true;

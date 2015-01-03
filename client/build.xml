@@ -4,7 +4,7 @@
    <property name="src.dir" value="src"/>
    <property name="build.dir" value="build"/>  
    <property name="dist.dir" value="dist"/> 
-
+   <property name = "resource.dir" value = "${src.dir}/resource"/>
    <target name="init">
       <tstamp>
          <format property="version.date" pattern="yyyy-MM-dd" locale="en"/>
@@ -21,6 +21,10 @@
    </target>
 
    <target name="build-jar" depends="compile">
+      <copy todir="${build.dir}/resource">
+         <fileset dir="${resource.dir}">
+         </fileset>
+      </copy>
       <jar destfile="${dist.dir}/MinetClient.jar" basedir="${build.dir}">
          <manifest>
             <attribute name="Build-By" value="SunDongliang"/>

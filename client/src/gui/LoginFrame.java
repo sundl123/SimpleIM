@@ -6,6 +6,7 @@ import java.awt.event.*;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.InetAddress;
+import java.net.URL;
 import java.util.Random;
 import com.sdl.MinetClient.network.*;
 
@@ -27,13 +28,13 @@ public class LoginFrame extends JFrame implements ActionListener{
     public int peerPort = -1;
 
     // gui component
-    Label labelAddr = new Label("Server  IP:");
-    Label labelPort = new Label("Server Port:");
-    Label lName = new Label("Nick  Name:");
+    JLabel labelAddr = new JLabel("Server  IP:");
+    JLabel labelPort = new JLabel("Server Port:");
+    JLabel lName = new JLabel("Nick  Name:");
 
-    TextField tfAddr = new TextField(15);
-    TextField tfPort = new TextField(15);
-    TextField tfName = new TextField(15);
+    JTextField tfAddr = new JTextField(15);
+    JTextField tfPort = new JTextField(15);
+    JTextField tfName = new JTextField(15);
     JButton btStart = new JButton("Start");
 
     JRadioButtonMenuItem csMode;
@@ -42,13 +43,32 @@ public class LoginFrame extends JFrame implements ActionListener{
 
     public LoginFrame() {
         // set up gui
-        setLayout(new GridLayout(4, 1, 2, 5));
+        // 设置背景图片
+        URL url = getClass().getResource("/resource/LoginBG.jpg");
+        ImageIcon img = new ImageIcon(url);
+        JLabel imgLabel = new JLabel(img);
+        this.getLayeredPane().add(imgLabel, new Integer(Integer.MIN_VALUE));
+        imgLabel.setBounds(0, 0, img.getIconWidth(), img.getIconHeight());
+        JPanel jp = (JPanel)getContentPane();
+        jp.setOpaque(false);
 
+        setLayout(new GridLayout(2,1, 2, 5));
+        JLabel title = new JLabel("");
+        title.setOpaque(false);
+        this.add(title);
+        JPanel pan = new JPanel(new GridLayout(4, 1, 2, 5));
+        pan.setOpaque(false);
+        this.add(pan);
 
         JPanel panel1 = new JPanel();
         JPanel panel2 = new JPanel();
         JPanel panel3 = new JPanel();
         JPanel panel4 = new JPanel();
+        panel1.setOpaque(false);
+        panel2.setOpaque(false);
+        panel3.setOpaque(false);
+        panel4.setOpaque(false);
+        labelAddr.setOpaque(false);
 
         panel1.add(labelAddr);
         panel1.add(tfAddr);
@@ -69,10 +89,10 @@ public class LoginFrame extends JFrame implements ActionListener{
           }
         ) ;
 
-        this.add(panel1);
-        this.add(panel2);
-        this.add(panel3);
-        this.add(panel4);
+        pan.add(panel1);
+        pan.add(panel2);
+        pan.add(panel3);
+        pan.add(panel4);
 
         // 添加菜单栏
         JMenu configMenu = new JMenu("Config");
@@ -103,8 +123,10 @@ public class LoginFrame extends JFrame implements ActionListener{
         this.setMode(this.mode);
 
         pack();
+        this.setSize(360,480);
         setVisible(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
+        setResizable(false);
 
         // 默认获取焦点
         tfName.requestFocus();
@@ -161,6 +183,7 @@ public class LoginFrame extends JFrame implements ActionListener{
                 break;
         }
         this.pack();
+        this.setSize(360,480);
     }
     public void actionPerformed(ActionEvent e) {
         try {
